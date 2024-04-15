@@ -578,8 +578,10 @@ impl LDNApplication {
             "false".to_string()
         };
 
+        log::info!("1");
         match gh.get_file(&file_name, &branch_name).await {
             Err(_) => {
+                log::info!("2");
                 let application_file = ApplicationFile::new(
                     issue_number.clone(),
                     multisig_address,
@@ -590,54 +592,6 @@ impl LDNApplication {
                     parsed_ldn.datacap,
                 )
                 .await;
-
-                let app_model = Self::get_application_model(
-                    application_id.clone(),
-                    info.owner.clone(),
-                    info.repo.clone(),
-                ).await?;
-                
-                // Check if application already exists in our db
-                let exists = Self::check_application_exists(
-                    app_model.clone(),
-                    application_id.clone(),
-                ).await?;
-
-                if exists {
-                    // Add a comment to the GitHub issue
-                    Self::issue_pathway_mismatch_comment(
-                        issue_number.clone(),
-                        info.owner.clone(),
-                        info.repo.clone(),
-                        app_model, 
-                    )
-                    .await?;
-                    
-                    // Return an error as the application already exists
-                    return Err(LDNError::New(
-                        "Pathway mismatch: Allocator already assigned".to_string(),
-                    ));
-                } else {
-                    let blockchain = BlockchainData::new();
-
-                    // Check the allowance for the address
-                    match blockchain.get_allowance_for_address(&app_model.id).await {
-                        Ok(allowance) if allowance != "0" => {
-                            // If allowance is found and is not zero, issue the pathway mismatch comment
-                            Self::issue_pathway_mismatch_comment(
-                                issue_number.clone(),
-                                info.owner.clone(),
-                                info.repo.clone(),
-                                app_model, 
-                            ).await?;
-                            
-                            return Err(LDNError::New(
-                                "Pathway mismatch: Allocator already assigned with allowance".to_string(),
-                            ));
-                        },
-                        _ => {} // If no allowance is found, do nothing and let the function proceed
-                    }
-                }
 
                 let file_content = match serde_json::to_string_pretty(&application_file) {
                     Ok(f) => f,
@@ -655,6 +609,7 @@ impl LDNApplication {
                         )));
                     }
                 };
+                log::info!("3");
                 let app_id = parsed_ldn.id.clone();
                 let file_sha = LDNPullRequest::create_pr(
                     issue_number.clone(),
