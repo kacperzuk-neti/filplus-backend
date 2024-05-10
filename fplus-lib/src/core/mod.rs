@@ -46,6 +46,13 @@ pub struct CreateApplicationInfo {
 }
 
 #[derive(Deserialize)]
+pub struct TriggerDataCapRefill {
+    pub id: String,
+    pub owner: String,
+    pub repo: String,
+}
+
+#[derive(Deserialize)]
 pub struct BranchDeleteInfo {
     pub owner: String,
     pub repo: String,
@@ -3521,6 +3528,22 @@ _The initial issue can be edited in order to solve the request of the verifier. 
         ).await;
 
         Ok(updated_application) // Return the updated ApplicationFile
+    }
+
+    pub async fn trigger_datacap_request(info: TriggerDataCapRefill) -> Result<ApplicationFile, LDNError> {
+        let app_model =
+            Self::get_application_model(info.id.clone(), info.owner.clone(), info.repo.clone())
+                .await?;
+
+        let app_str = app_model.application.ok_or_else(|| {
+            LDNError::Load(format!(
+                "Application {} does not have an application field",
+                info.id
+            ))
+        })?;
+
+        ApplicationFile::from_str(&app_str)
+            .map_err(|e| LDNError::Load(format!("Failed to parse application file from DB: {}", e)))
     }
 }
 

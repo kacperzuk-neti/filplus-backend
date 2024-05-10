@@ -1,6 +1,6 @@
 use actix_web::{get, post, web, HttpResponse, Responder};
 use fplus_lib::core::{
-        application::file::VerifierInput, ApplicationQueryParams, BranchDeleteInfo, CompleteGovernanceReviewInfo, CompleteNewApplicationApprovalInfo, CompleteNewApplicationProposalInfo, CreateApplicationInfo, DcReachedInfo, GithubQueryParams, LDNApplication, MoreInfoNeeded, RefillInfo, ValidationPullRequestData, VerifierActionsQueryParams
+        application::file::VerifierInput, ApplicationQueryParams, BranchDeleteInfo, CompleteGovernanceReviewInfo, CompleteNewApplicationApprovalInfo, CompleteNewApplicationProposalInfo, CreateApplicationInfo, DcReachedInfo, GithubQueryParams, LDNApplication, MoreInfoNeeded, RefillInfo, ValidationPullRequestData, VerifierActionsQueryParams, TriggerDataCapRefill
     };
 
 
@@ -22,7 +22,7 @@ pub async fn single(
     query: web::Query<ApplicationQueryParams>,
 ) -> impl Responder {
     let ApplicationQueryParams { id, owner, repo } = query.into_inner();
-
+    
     match LDNApplication::load_from_db(id, owner, repo).await {
         Ok(app_file) => {
             return HttpResponse::Ok().body(serde_json::to_string_pretty(&app_file).unwrap())
@@ -455,4 +455,14 @@ pub async fn check_for_changes(
 #[get("/health")]
 pub async fn health() -> impl Responder {
     HttpResponse::Ok().body("OK")
+}
+
+#[post("application/trigger_datacap_request")]
+pub async fn trigger_datacap_request(info: web::Json<TriggerDataCapRefill>) -> impl Responder {
+    match LDNApplication::trigger_datacap_request(info.into_inner()).await {
+        Ok(app_file) => {
+            return HttpResponse::Ok().body(serde_json::to_string_pretty(&app_file).unwrap())
+        }
+        Err(e) => return HttpResponse::BadRequest().body(e.to_string()),
+    };
 }
