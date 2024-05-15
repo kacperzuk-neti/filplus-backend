@@ -17,7 +17,7 @@ use crate::{
         blockchain::BlockchainData, filecoin::get_multisig_threshold_for_actor, github::{
             github_async_new, CreateMergeRequestData, CreateRefillMergeRequestData, GithubWrapper,
         }
-    }, helpers::{compare_allowance_and_allocation, process_amount}, parsers::ParsedIssue
+    }, helpers::{compare_allowance_and_allocation, process_amount, parse_size_to_bytes}, parsers::ParsedIssue
 };
 use fplus_database::database::allocation_amounts::get_allocation_quantity_options;
 use fplus_database::database::{
@@ -46,7 +46,7 @@ pub struct CreateApplicationInfo {
 }
 
 #[derive(Deserialize)]
-pub struct TriggerDataCapRefill {
+pub struct TriggerSSAInfo {
     pub id: String,
     pub owner: String,
     pub repo: String,
@@ -308,6 +308,7 @@ impl LDNApplication {
         owner: String,
         repo: String,
     ) -> Result<ApplicationModel, LDNError> {
+        println!("tutaj ###################################################################### {}{}{}", application_id, owner, repo);
         let app_model_result =
             database::applications::get_application(application_id, owner, repo, None).await;
         match app_model_result {
@@ -3530,7 +3531,7 @@ _The initial issue can be edited in order to solve the request of the verifier. 
         Ok(updated_application) // Return the updated ApplicationFile
     }
 
-    pub async fn trigger_datacap_request(info: TriggerDataCapRefill) -> Result<ApplicationFile, LDNError> {
+    pub async fn trigger_ssa(info: TriggerSSAInfo) -> Result<ApplicationFile, LDNError> {
         let app_model =
             Self::get_application_model(info.id.clone(), info.owner.clone(), info.repo.clone())
                 .await?;
@@ -3541,7 +3542,22 @@ _The initial issue can be edited in order to solve the request of the verifier. 
                 info.id
             ))
         })?;
+        let application_file = serde_json::from_str::<ApplicationFile>(&app_str).unwrap();
 
+        if application_file.lifecycle.state != AppState::Granted {
+            return Err(LDNError::Load(format!("Application state is {:?}. Expected Granted", application_file.lifecycle.state)));
+        }
+        let last_allocation = application_file.get_last_request_allowance().ok_or(LDNError::Load("Last allocation not found".into()))?;
+        if last_allocation.is_active {
+            return Err(LDNError::Load("Last active allocation ID is active".into()));
+        }
+
+        let total_requested: u64 = application_file.allocation.total_requested();
+        if let Some(total_requested_amount) = parse_size_to_bytes(&application_file.datacap.total_requested_amount.clone()) {
+            if total_requested == total_requested_amount {
+                return Err(LDNError::Load("Total datacap reached".into()));
+            }
+        }
         ApplicationFile::from_str(&app_str)
             .map_err(|e| LDNError::Load(format!("Failed to parse application file from DB: {}", e)))
     }
