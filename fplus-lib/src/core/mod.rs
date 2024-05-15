@@ -308,7 +308,6 @@ impl LDNApplication {
         owner: String,
         repo: String,
     ) -> Result<ApplicationModel, LDNError> {
-        println!("tutaj ###################################################################### {}{}{}", application_id, owner, repo);
         let app_model_result =
             database::applications::get_application(application_id, owner, repo, None).await;
         match app_model_result {
@@ -3552,11 +3551,11 @@ _The initial issue can be edited in order to solve the request of the verifier. 
             return Err(LDNError::Load("Last active allocation ID is active".into()));
         }
 
-        let total_requested: u64 = application_file.allocation.total_requested();
-        if let Some(total_requested_amount) = parse_size_to_bytes(&application_file.datacap.total_requested_amount.clone()) {
-            if total_requested == total_requested_amount {
-                return Err(LDNError::Load("Total datacap reached".into()));
-            }
+        let requested_so_far = application_file.allocation.total_requested();
+        let total_requested = parse_size_to_bytes(&application_file.datacap.total_requested_amount.clone()).ok_or(LDNError::Load("Can not parse total requested amount to bytes".into()))?;
+        
+        if requested_so_far == total_requested {
+            return Err(LDNError::Load("Total datacap reached".into()));
         }
         ApplicationFile::from_str(&app_str)
             .map_err(|e| LDNError::Load(format!("Failed to parse application file from DB: {}", e)))

@@ -3,7 +3,7 @@ use chrono::Utc;
 use super::file::{
     Allocation, AllocationRequest, AllocationRequestType, Allocations, Verifiers, Verifier,
 };
-use crate:: helpers::parse_size_to_bytes;
+use crate::helpers::parse_size_to_bytes;
 
 impl Default for Verifiers {
     fn default() -> Self {
