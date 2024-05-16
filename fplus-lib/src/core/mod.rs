@@ -50,6 +50,8 @@ pub struct TriggerSSAInfo {
     pub id: String,
     pub owner: String,
     pub repo: String,
+    pub amount: String,
+    pub amount_type: String,
 }
 
 #[derive(Deserialize)]
@@ -3557,6 +3559,14 @@ _The initial issue can be edited in order to solve the request of the verifier. 
         if requested_so_far == total_requested {
             return Err(LDNError::Load("Total datacap reached".into()));
         }
+        let refill_info = RefillInfo {
+            id: info.id,
+            amount: info.amount,
+            amount_type: info.amount_type,
+            owner: app_model.owner,
+            repo: app_model.repo,
+        };
+        let is_success = Self::refill(refill_info).await?;
         ApplicationFile::from_str(&app_str)
             .map_err(|e| LDNError::Load(format!("Failed to parse application file from DB: {}", e)))
     }
