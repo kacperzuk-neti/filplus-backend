@@ -3554,9 +3554,11 @@ _The initial issue can be edited in order to solve the request of the verifier. 
         }
 
         let requested_so_far = application_file.allocation.total_requested();
-        let total_requested = parse_size_to_bytes(&application_file.datacap.total_requested_amount.clone()).ok_or(LDNError::Load("Can not parse total requested amount to bytes".into()))?;
+        let total_requested = parse_size_to_bytes(&application_file.datacap.total_requested_amount).ok_or(
+            LDNError::Load("Can not parse total requested amount to bytes".into()),
+            )?;
         
-        if requested_so_far == total_requested {
+        if requested_so_far >= total_requested {
             return Err(LDNError::Load("Total datacap reached".into()));
         }
         let refill_info = RefillInfo {
