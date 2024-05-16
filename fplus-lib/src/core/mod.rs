@@ -3532,7 +3532,7 @@ _The initial issue can be edited in order to solve the request of the verifier. 
         Ok(updated_application) // Return the updated ApplicationFile
     }
 
-    pub async fn trigger_ssa(info: TriggerSSAInfo) -> Result<ApplicationFile, LDNError> {
+    pub async fn trigger_ssa(info: TriggerSSAInfo) -> Result<(), LDNError> {
         let app_model =
             Self::get_application_model(info.id.clone(), info.owner.clone(), info.repo.clone())
                 .await?;
@@ -3566,9 +3566,8 @@ _The initial issue can be edited in order to solve the request of the verifier. 
             owner: app_model.owner,
             repo: app_model.repo,
         };
-        let is_success = Self::refill(refill_info).await?;
-        ApplicationFile::from_str(&app_str)
-            .map_err(|e| LDNError::Load(format!("Failed to parse application file from DB: {}", e)))
+        Self::refill(refill_info).await?;
+        Ok(())
     }
 }
 

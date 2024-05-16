@@ -459,8 +459,8 @@ pub async fn health() -> impl Responder {
 #[post("application/trigger_ssa")]
 pub async fn trigger_ssa(info: web::Json<TriggerSSAInfo>) -> impl Responder {
     match LDNApplication::trigger_ssa(info.into_inner()).await {
-        Ok(app_file) => {
-            return HttpResponse::Ok().body(serde_json::to_string_pretty(&app_file).unwrap())
+        Ok(()) => {
+            return HttpResponse::Ok().body(serde_json::to_string_pretty("Success").unwrap())
         }
         Err(e) => return HttpResponse::BadRequest().body(e.to_string()),
     };
